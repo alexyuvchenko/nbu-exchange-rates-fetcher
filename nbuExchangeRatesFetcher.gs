@@ -29,7 +29,7 @@ const CONFIG = {
     COLUMN_NAMES: {
       DATE: 'Date',
       USD_NBU: 'USD NBU',
-      EURO_NBU: 'EURO NBU',
+      EUR_NBU: 'EURO NBU',
     },
   },
 };
@@ -260,7 +260,7 @@ class RateCache {
 /**
  * Class for NBU API operations
  */
-class NBUApi {
+class NbuApi {
   /**
    * Fetch exchange rates from the NBU API
    */
@@ -338,13 +338,13 @@ class SheetHandler {
     // Find the column indices
     const headers = data[0];
     const usdNbuColIndex = headers.indexOf(CONFIG.SHEET.COLUMN_NAMES.USD_NBU);
-    const euroNbuColIndex = headers.indexOf(CONFIG.SHEET.COLUMN_NAMES.EURO_NBU);
+    const eurNbuColIndex = headers.indexOf(CONFIG.SHEET.COLUMN_NAMES.EUR_NBU);
     const dateColIndex = headers.indexOf(CONFIG.SHEET.COLUMN_NAMES.DATE);
 
     // Check if all required columns exist
-    if (usdNbuColIndex === -1 || euroNbuColIndex === -1 || dateColIndex === -1) {
+    if (usdNbuColIndex === -1 || eurNbuColIndex === -1 || dateColIndex === -1) {
       SpreadsheetApp.getUi().alert(
-        `One or more required columns not found. Please ensure your sheet has '${CONFIG.SHEET.COLUMN_NAMES.USD_NBU}', '${CONFIG.SHEET.COLUMN_NAMES.EURO_NBU}', and '${CONFIG.SHEET.COLUMN_NAMES.DATE}' columns.`
+        `One or more required columns not found. Please ensure your sheet has '${CONFIG.SHEET.COLUMN_NAMES.USD_NBU}', '${CONFIG.SHEET.COLUMN_NAMES.EUR_NBU}', and '${CONFIG.SHEET.COLUMN_NAMES.DATE}' columns.`
       );
       return;
     }
@@ -354,13 +354,13 @@ class SheetHandler {
       data,
       dateColIndex,
       usdNbuColIndex,
-      euroNbuColIndex
+      eurNbuColIndex
     );
 
     // Format the rate columns
     if (results.updatedRows > 0) {
       sheet.getRange(2, usdNbuColIndex + 1, data.length - 1, 1).setNumberFormat('0.0000');
-      sheet.getRange(2, euroNbuColIndex + 1, data.length - 1, 1).setNumberFormat('0.0000');
+      sheet.getRange(2, eurNbuColIndex + 1, data.length - 1, 1).setNumberFormat('0.0000');
       SpreadsheetApp.getUi().alert('Updated exchange rates for ' + results.updatedRows + ' rows.');
     } else {
       SpreadsheetApp.getUi().alert('No exchange rates were updated. Check your date format.');
@@ -370,7 +370,7 @@ class SheetHandler {
   /**
    * Process rows for date-based rate updates
    */
-  static processDateColumnRows(sheet, data, dateColIndex, usdColIndex, euroColIndex) {
+  static processDateColumnRows(sheet, data, dateColIndex, usdColIndex, eurColIndex) {
     // Keep track of dates we've already looked up to avoid redundant API calls in this session
     const sessionCache = {};
     let updatedRows = 0;
@@ -391,17 +391,17 @@ class SheetHandler {
       if (apiDateStr in sessionCache) {
         // Update this row with cached values
         sheet.getRange(i + 1, usdColIndex + 1).setValue(sessionCache[apiDateStr].usd);
-        sheet.getRange(i + 1, euroColIndex + 1).setValue(sessionCache[apiDateStr].eur);
+        sheet.getRange(i + 1, eurColIndex + 1).setValue(sessionCache[apiDateStr].eur);
         updatedRows++;
         continue;
       }
 
-      const rates = NBUApi.fetchRates(apiDateStr);
+      const rates = NbuApi.fetchRates(apiDateStr);
 
       if (rates) {
         // Update the row with the exchange rates
         sheet.getRange(i + 1, usdColIndex + 1).setValue(rates.usd);
-        sheet.getRange(i + 1, euroColIndex + 1).setValue(rates.eur);
+        sheet.getRange(i + 1, eurColIndex + 1).setValue(rates.eur);
 
         // Cache the rates for this session
         sessionCache[apiDateStr] = rates;
@@ -542,7 +542,7 @@ function fetchRatesForDate(dateStr) {
   }
 
   const apiDateStr = parsedDate.apiDateStr;
-  const rates = NBUApi.fetchRates(apiDateStr);
+  const rates = NbuApi.fetchRates(apiDateStr);
 
   if (!rates) {
     SpreadsheetApp.getUi().alert('Could not find USD or EUR exchange rates in the data.');
